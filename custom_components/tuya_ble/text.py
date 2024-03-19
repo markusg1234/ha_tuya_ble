@@ -123,11 +123,36 @@ mapping: dict[str, TuyaBLECategoryTextMapping] = {
                     "blliqpsj",
                     "ndvkgsrm",
                     "yiihr7zh",
+                    "riecov42",
                     "neq16kgd"
                 ],  # Fingerbot Plus
                 [
                     TuyaBLETextMapping(
                         dp_id=121,
+                        description=TextEntityDescription(
+                            key="program",
+                            icon="mdi:repeat",
+                            pattern="^((\d{1,2}|100)(\/\d{1,2})?)(;((\d{1,2}|100)(\/\d{1,2})?))+$",
+                            entity_category=EntityCategory.CONFIG,
+                        ),
+                        is_available=is_fingerbot_in_program_mode,
+                        getter=get_fingerbot_program,
+                        setter=set_fingerbot_program,
+                    ),
+                ]
+            ),
+        },
+    ),
+    "kg": TuyaBLECategoryTextMapping(
+        products={
+            **dict.fromkeys(
+                [
+                    "mknd4lci",
+                    "riecov42"
+                ],  # Fingerbot Plus
+                [
+                    TuyaBLETextMapping(
+                        dp_id=109,
                         description=TextEntityDescription(
                             key="program",
                             icon="mdi:repeat",

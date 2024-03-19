@@ -29,7 +29,10 @@ from homeassistant.data_entry_flow import FlowHandler, FlowResult
 
 from homeassistant.components.tuya.const import (
     CONF_APP_TYPE,
+    CONF_AUTH_TYPE,
     CONF_ENDPOINT,
+    SMARTLIFE_APP,
+    TUYA_COUNTRIES,
     TUYA_RESPONSE_CODE,
     TUYA_RESPONSE_MSG,
     TUYA_RESPONSE_SUCCESS,

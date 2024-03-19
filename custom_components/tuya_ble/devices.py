@@ -222,7 +222,8 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
                 [
                     "blliqpsj",
                     "ndvkgsrm",
-                    "yiihr7zh", 
+                    "yiihr7zh",
+                    "riecov42",
                     "neq16kgd"
                 ],  # device product_ids
                 TuyaBLEProductInfo(
@@ -264,14 +265,37 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
             ),
         },
     ),
+    "kg": TuyaBLECategoryInfo(
+        products={
+            **dict.fromkeys(
+                [
+                    "mknd4lci",
+                    "riecov42"
+                ],  # device product_ids
+                TuyaBLEProductInfo(
+                    name="Fingerbot Plus",
+                    fingerbot=TuyaBLEFingerbotInfo(
+                        switch=1,
+                        mode=101,
+                        up_position=106,
+                        down_position=102,
+                        hold_time=103,
+                        reverse_positions=104,
+                        manual_control=107,
+                        program=109,
+                    ),
+                ),
+            ),
+        },
+    ),
     "wk": TuyaBLECategoryInfo(
         products={
             **dict.fromkeys(
             [
-            "drlajpqc", 
+            "drlajpqc",
             "nhj2j7su",
             ],  # device product_id
-            TuyaBLEProductInfo(  
+            TuyaBLEProductInfo(
                 name="Thermostatic Radiator Valve",
                 ),
             ),
