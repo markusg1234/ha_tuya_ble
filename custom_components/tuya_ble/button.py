@@ -72,7 +72,8 @@ mapping: dict[str, TuyaBLECategoryButtonMapping] = {
                 [
                     "blliqpsj",
                     "ndvkgsrm",
-                    "yiihr7zh", 
+                    "riecov42",         
+                    "yiihr7zh",
                     "neq16kgd"
                 ],  # Fingerbot Plus
                 [
@@ -91,6 +92,19 @@ mapping: dict[str, TuyaBLECategoryButtonMapping] = {
                 ],  # Fingerbot
                 [
                     TuyaBLEFingerbotModeMapping(dp_id=2),
+                ],
+            ),
+        },
+    ),
+    "kg": TuyaBLECategoryButtonMapping(
+        products={
+            **dict.fromkeys(
+                [
+                    "mknd4lci",
+                    "riecov42"
+                ],  # Fingerbot Plus
+                [
+                    TuyaBLEFingerbotModeMapping(dp_id=108),
                 ],
             ),
         },
