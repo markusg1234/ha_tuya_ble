@@ -36,9 +36,12 @@ from .const import (
 )
 from .devices import TuyaBLEData, TuyaBLEEntity, TuyaBLEProductInfo
 from .tuya_ble import TuyaBLEDataPointType, TuyaBLEDevice
+
 _LOGGER = logging.getLogger(__name__)
 SIGNAL_STRENGTH_DP_ID = -1
 TuyaBLESensorIsAvailable = Callable[["TuyaBLESensor", TuyaBLEProductInfo], bool] | None
+
+
 @dataclass
 class TuyaBLESensorMapping:
     dp_id: int
@@ -49,6 +52,8 @@ class TuyaBLESensorMapping:
     coefficient: float = 1.0
     icons: list[str] | None = None
     is_available: TuyaBLESensorIsAvailable = None
+
+
 @dataclass
 class TuyaBLEBatteryMapping(TuyaBLESensorMapping):
     description: SensorEntityDescription = field(
@@ -60,6 +65,8 @@ class TuyaBLEBatteryMapping(TuyaBLESensorMapping):
             state_class=SensorStateClass.MEASUREMENT,
         )
     )
+
+
 @dataclass
 class TuyaBLETemperatureMapping(TuyaBLESensorMapping):
     description: SensorEntityDescription = field(
@@ -70,20 +77,28 @@ class TuyaBLETemperatureMapping(TuyaBLESensorMapping):
             state_class=SensorStateClass.MEASUREMENT,
         )
     )
+
+
 def is_co2_alarm_enabled(self: TuyaBLESensor, product: TuyaBLEProductInfo) -> bool:
     result: bool = True
     datapoint = self._device.datapoints[13]
     if datapoint:
         result = bool(datapoint.value)
     return result
+
+
 def battery_enum_getter(self: TuyaBLESensor) -> None:
     datapoint = self._device.datapoints[104]
     if datapoint:
         self._attr_native_value = datapoint.value * 20.0
+
+
 @dataclass
 class TuyaBLECategorySensorMapping:
     products: dict[str, list[TuyaBLESensorMapping]] | None = None
     mapping: list[TuyaBLESensorMapping] | None = None
+
+
 mapping: dict[str, TuyaBLECategorySensorMapping] = {
     "co2bj": TuyaBLECategorySensorMapping(
         products={
@@ -127,7 +142,7 @@ mapping: dict[str, TuyaBLECategorySensorMapping] = {
     "ms": TuyaBLECategorySensorMapping(
         products={
             **dict.fromkeys(
-                ["ludzroix", "isk2p555"], # Smart Lock
+                ["ludzroix", "isk2p555"],  # Smart Lock
                 [
                     TuyaBLESensorMapping(
                         dp_id=21,
@@ -176,7 +191,7 @@ mapping: dict[str, TuyaBLECategorySensorMapping] = {
                 [
                     "blliqpsj",
                     "ndvkgsrm",
-                    "yiihr7zh", 
+                    "yiihr7zh",
                     "neq16kgd"
                 ],  # Fingerbot Plus
                 [
@@ -201,41 +216,44 @@ mapping: dict[str, TuyaBLECategorySensorMapping] = {
     ),
     "wsdcg": TuyaBLECategorySensorMapping(
         products={
-            "ojzlzzsw": [  # Soil moisture sensor
-                TuyaBLETemperatureMapping(
-                    dp_id=1,
-                    coefficient=10.0,
-                ),
-                TuyaBLESensorMapping(
-                    dp_id=2,
-                    description=SensorEntityDescription(
-                        key="moisture",
-                        device_class=SensorDeviceClass.MOISTURE,
-                        native_unit_of_measurement=PERCENTAGE,
-                        state_class=SensorStateClass.MEASUREMENT,
+            **dict.fromkeys(
+                ["ojzlzzsw", "j5mynqs3"],
+                [  # Soil moisture sensor
+                    TuyaBLETemperatureMapping(
+                        dp_id=1,
+                        coefficient=10.0,
                     ),
-                ),
-                TuyaBLESensorMapping(
-                    dp_id=3,
-                    description=SensorEntityDescription(
-                        key="battery_state",
-                        icon="mdi:battery",
-                        device_class=SensorDeviceClass.ENUM,
-                        entity_category=EntityCategory.DIAGNOSTIC,
-                        options=[
-                            BATTERY_STATE_LOW,
-                            BATTERY_STATE_NORMAL,
-                            BATTERY_STATE_HIGH,
+                    TuyaBLESensorMapping(
+                        dp_id=2,
+                        description=SensorEntityDescription(
+                            key="moisture",
+                            device_class=SensorDeviceClass.MOISTURE,
+                            native_unit_of_measurement=PERCENTAGE,
+                            state_class=SensorStateClass.MEASUREMENT,
+                        ),
+                    ),
+                    TuyaBLESensorMapping(
+                        dp_id=3,
+                        description=SensorEntityDescription(
+                            key="battery_state",
+                            icon="mdi:battery",
+                            device_class=SensorDeviceClass.ENUM,
+                            entity_category=EntityCategory.DIAGNOSTIC,
+                            options=[
+                                BATTERY_STATE_LOW,
+                                BATTERY_STATE_NORMAL,
+                                BATTERY_STATE_HIGH,
+                            ],
+                        ),
+                        icons=[
+                            "mdi:battery-alert",
+                            "mdi:battery-50",
+                            "mdi:battery-check",
                         ],
                     ),
-                    icons=[
-                        "mdi:battery-alert",
-                        "mdi:battery-50",
-                        "mdi:battery-check",
-                    ],
-                ),
-                TuyaBLEBatteryMapping(dp_id=4),
-            ],
+                    TuyaBLEBatteryMapping(dp_id=4),
+                ],
+            ),
         },
     ),
     "zwjcy": TuyaBLECategorySensorMapping(
@@ -296,31 +314,31 @@ mapping: dict[str, TuyaBLECategorySensorMapping] = {
     "znhsb": TuyaBLECategorySensorMapping(
         products={
             "cdlandip":  # Smart water bottle
-            [
-                TuyaBLETemperatureMapping(
-                    dp_id=101,
-                ),
-                TuyaBLESensorMapping(
-                    dp_id=102,
-                    description=SensorEntityDescription(
-                        key="water_intake",
-                        device_class=SensorDeviceClass.WATER,
-                        native_unit_of_measurement=VOLUME_MILLILITERS,
-                        state_class=SensorStateClass.MEASUREMENT,
+                [
+                    TuyaBLETemperatureMapping(
+                        dp_id=101,
                     ),
-                ),
-                TuyaBLESensorMapping(
-                    dp_id=104,
-                    description=SensorEntityDescription(
-                        key="battery",
-                        device_class=SensorDeviceClass.BATTERY,
-                        native_unit_of_measurement=PERCENTAGE,
-                        entity_category=EntityCategory.DIAGNOSTIC,
-                        state_class=SensorStateClass.MEASUREMENT,
+                    TuyaBLESensorMapping(
+                        dp_id=102,
+                        description=SensorEntityDescription(
+                            key="water_intake",
+                            device_class=SensorDeviceClass.WATER,
+                            native_unit_of_measurement=VOLUME_MILLILITERS,
+                            state_class=SensorStateClass.MEASUREMENT,
+                        ),
                     ),
-                    getter=battery_enum_getter,
-                ),
-            ],
+                    TuyaBLESensorMapping(
+                        dp_id=104,
+                        description=SensorEntityDescription(
+                            key="battery",
+                            device_class=SensorDeviceClass.BATTERY,
+                            native_unit_of_measurement=PERCENTAGE,
+                            entity_category=EntityCategory.DIAGNOSTIC,
+                            state_class=SensorStateClass.MEASUREMENT,
+                        ),
+                        getter=battery_enum_getter,
+                    ),
+                ],
         },
     ),
     "ggq": TuyaBLECategorySensorMapping(
@@ -361,8 +379,12 @@ mapping: dict[str, TuyaBLECategorySensorMapping] = {
         },
     ),
 }
+
+
 def rssi_getter(sensor: TuyaBLESensor) -> None:
     sensor._attr_native_value = sensor._device.rssi
+
+
 rssi_mapping = TuyaBLESensorMapping(
     dp_id=SIGNAL_STRENGTH_DP_ID,
     description=SensorEntityDescription(
@@ -375,6 +397,8 @@ rssi_mapping = TuyaBLESensorMapping(
     ),
     getter=rssi_getter,
 )
+
+
 def get_mapping_by_device(device: TuyaBLEDevice) -> list[TuyaBLESensorMapping]:
     category = mapping.get(device.category)
     if category is not None and category.products is not None:
@@ -387,18 +411,22 @@ def get_mapping_by_device(device: TuyaBLEDevice) -> list[TuyaBLESensorMapping]:
             return []
     else:
         return []
+
+
 class TuyaBLESensor(TuyaBLEEntity, SensorEntity):
     """Representation of a Tuya BLE sensor."""
+
     def __init__(
-        self,
-        hass: HomeAssistant,
-        coordinator: DataUpdateCoordinator,
-        device: TuyaBLEDevice,
-        product: TuyaBLEProductInfo,
-        mapping: TuyaBLESensorMapping,
+            self,
+            hass: HomeAssistant,
+            coordinator: DataUpdateCoordinator,
+            device: TuyaBLEDevice,
+            product: TuyaBLEProductInfo,
+            mapping: TuyaBLESensorMapping,
     ) -> None:
         super().__init__(hass, coordinator, device, product, mapping.description)
         self._mapping = mapping
+
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
@@ -410,7 +438,7 @@ class TuyaBLESensor(TuyaBLEEntity, SensorEntity):
                 if datapoint.type == TuyaBLEDataPointType.DT_ENUM:
                     if self.entity_description.options is not None:
                         if datapoint.value >= 0 and datapoint.value < len(
-                            self.entity_description.options
+                                self.entity_description.options
                         ):
                             self._attr_native_value = self.entity_description.options[
                                 datapoint.value
@@ -419,16 +447,17 @@ class TuyaBLESensor(TuyaBLEEntity, SensorEntity):
                             self._attr_native_value = datapoint.value
                     if self._mapping.icons is not None:
                         if datapoint.value >= 0 and datapoint.value < len(
-                            self._mapping.icons
+                                self._mapping.icons
                         ):
                             self._attr_icon = self._mapping.icons[datapoint.value]
                 elif datapoint.type == TuyaBLEDataPointType.DT_VALUE:
                     self._attr_native_value = (
-                        datapoint.value / self._mapping.coefficient
+                            datapoint.value / self._mapping.coefficient
                     )
                 else:
                     self._attr_native_value = datapoint.value
         self.async_write_ha_state()
+
     @property
     def available(self) -> bool:
         """Return if entity is available."""
@@ -436,10 +465,12 @@ class TuyaBLESensor(TuyaBLEEntity, SensorEntity):
         if result and self._mapping.is_available:
             result = self._mapping.is_available(self, self._product)
         return result
+
+
 async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Tuya BLE sensors."""
     data: TuyaBLEData = hass.data[DOMAIN][entry.entry_id]
@@ -455,7 +486,7 @@ async def async_setup_entry(
     ]
     for mapping in mappings:
         if mapping.force_add or data.device.datapoints.has_id(
-            mapping.dp_id, mapping.dp_type
+                mapping.dp_id, mapping.dp_type
         ):
             entities.append(
                 TuyaBLESensor(
