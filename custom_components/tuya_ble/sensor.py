@@ -14,10 +14,9 @@ from homeassistant.const import (
     CONCENTRATION_PARTS_PER_MILLION,
     PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
-    TEMP_CELSIUS,
-    VOLUME_MILLILITERS,
     UnitOfTemperature,
-    UnitOfTime
+    UnitOfTime,
+    UnitOfVolume
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import EntityCategory
@@ -305,7 +304,7 @@ mapping: dict[str, TuyaBLECategorySensorMapping] = {
                     description=SensorEntityDescription(
                         key="water_intake",
                         device_class=SensorDeviceClass.WATER,
-                        native_unit_of_measurement=VOLUME_MILLILITERS,
+                        native_unit_of_measurement=UnitOfVolume.MILLILITERS,
                         state_class=SensorStateClass.MEASUREMENT,
                     ),
                 ),
@@ -359,6 +358,29 @@ mapping: dict[str, TuyaBLECategorySensorMapping] = {
                 ),
             ],
         },
+    ),
+    "cl": TuyaBLECategorySensorMapping(
+        products={
+            **dict.fromkeys(
+                ["4pbr8eig", "qqdxfdht"], # Blind Controller
+                [
+                    TuyaBLEBatteryMapping(dp_id=13),
+                    TuyaBLESensorMapping(
+                        dp_id=7,
+                        description=SensorEntityDescription(
+                            key="cover_work_state",
+                            entity_category=EntityCategory.DIAGNOSTIC,
+                            device_class=SensorDeviceClass.ENUM,
+                            options=[
+                                "STANDBY",
+                                "SUCCESS",
+                                "LEARNING"
+                            ]
+                        )
+                    )
+                ],
+            ),
+        }
     ),
 }
 def rssi_getter(sensor: TuyaBLESensor) -> None:

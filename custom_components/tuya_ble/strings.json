@@ -70,6 +70,9 @@
       },
       "countdown_duration_z2": {
         "name": "Irrigation duration - Zone 2"
+      },
+      "cover_speed": {
+        "name": "Motor Speed"
       }
     },
     "select": {
@@ -168,6 +171,9 @@
       },
       "use_time_z2": {
           "name": "Last irrigation time - Zone 2"
+      },
+      "cover_work_state": {
+        "name": "Current State"
       }
     },
     "switch": {
@@ -229,6 +235,14 @@
     "text": {
       "program": {
         "name": "Program: position[/time];..."
+      }
+    },
+    "cover": {
+      "ble_blind_controller": {
+        "name": "Blind Motor"
+      },
+      "ble_curtain_controller": {
+        "name": "Curtain Motor"
       }
     }
   },

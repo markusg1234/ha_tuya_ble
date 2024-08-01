@@ -42,7 +42,6 @@ class TemperatureUnitDescription(SelectEntityDescription):
     icon: str = "mdi:thermometer"
     entity_category: EntityCategory = EntityCategory.CONFIG
 
-
 @dataclass
 class TuyaBLEFingerbotModeMapping(TuyaBLESelectMapping):
     description: SelectEntityDescription = field(
@@ -170,33 +169,6 @@ mapping: dict[str, TuyaBLECategorySelectMapping] = {
                         options=[
                             "interval_reminder",
                             "schedule_reminder",
-                        ],
-                        entity_category=EntityCategory.CONFIG,
-                    ),
-                ),
-            ],
-        },
-    ),
-    "znhsb": TuyaBLECategorySelectMapping(
-        products={
-            "cdlandip":  # Smart water bottle
-            [
-                TuyaBLESelectMapping(
-                    dp_id=106,
-                    description=TemperatureUnitDescription(
-                        options=[
-                            UnitOfTemperature.CELSIUS,
-                            UnitOfTemperature.FAHRENHEIT,
-                        ],
-                    )
-                ),
-                TuyaBLESelectMapping(
-                    dp_id=107,
-                    description=SelectEntityDescription(
-                        key="reminder_mode",
-                        options=[
-                            "interval_reminder",
-                            "alarm_reminder",
                         ],
                         entity_category=EntityCategory.CONFIG,
                     ),

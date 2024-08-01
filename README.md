@@ -52,6 +52,9 @@ The integration works locally, but connection to Tuya BLE device requires device
   + Irrigation computer (product_id '6pahkcau')
   + 2-outlet irrigation computer SGW02 (product_id 'hfgdqhho'), also known as MOES BWV-YC02-EU-GY
 
+* Covers (category_id 'cl')
+  + Moes Roller Blind Motor (product_id '4pbr8eig')
+
 ## Support project
 
 I am working on this integration in Ukraine. Our country was subjected to brutal aggression by Russia. The war still continues. The capital of Ukraine - Kyiv, where I live, and many other cities and villages are constantly under threat of rocket attacks. Our air defense forces are doing wonders, but they also need support. So if you want to help the development of this integration, donate some money and I will spend it to support our air defense.
