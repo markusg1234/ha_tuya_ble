@@ -337,27 +337,34 @@ mapping: dict[str, TuyaBLECategorySensorMapping] = {
                     ),
                 ),
             ],
-            "hfgdqhho": [  # Irrigation computer - SGW02
-                TuyaBLEBatteryMapping(dp_id=11),
-                TuyaBLESensorMapping(
-                    dp_id=111,
-                    description=SensorEntityDescription(
-                        key="use_time_z1",
-                        device_class=SensorDeviceClass.DURATION,
-                        native_unit_of_measurement=UnitOfTime.SECONDS,
-                        state_class=SensorStateClass.MEASUREMENT,
+            **dict.fromkeys(
+                [
+                    "hfgdqhho",
+                    "qycalacn",
+                    "fnlw6npo"
+                ],  # Irrigation computer - SGW02, SGW08, BWV-YC02-EU-GY
+                [ 
+                    TuyaBLEBatteryMapping(dp_id=11),
+                    TuyaBLESensorMapping(
+                        dp_id=111,
+                        description=SensorEntityDescription(
+                            key="use_time_z1",
+                            device_class=SensorDeviceClass.DURATION,
+                            native_unit_of_measurement=UnitOfTime.SECONDS,
+                            state_class=SensorStateClass.MEASUREMENT,
+                        ),
                     ),
-                ),
-                TuyaBLESensorMapping(
-                    dp_id=110,
-                    description=SensorEntityDescription(
-                        key="use_time_z2",
-                        device_class=SensorDeviceClass.DURATION,
-                        native_unit_of_measurement=UnitOfTime.SECONDS,
-                        state_class=SensorStateClass.MEASUREMENT,
+                    TuyaBLESensorMapping(
+                        dp_id=110,
+                        description=SensorEntityDescription(
+                            key="use_time_z2",
+                            device_class=SensorDeviceClass.DURATION,
+                            native_unit_of_measurement=UnitOfTime.SECONDS,
+                            state_class=SensorStateClass.MEASUREMENT,
+                        ),
                     ),
-                ),
-            ],
+                ],
+            ),
         },
     ),
 }
