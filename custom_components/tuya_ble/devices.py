@@ -186,7 +186,8 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
             **dict.fromkeys(
                 [
                     "ludzroix",
-                    "isk2p555"
+                    "isk2p555",
+                    "zl8r5v0x"
                 ],
                     TuyaBLEProductInfo(  # device product_id
                     name="Smart Lock",
@@ -194,6 +195,18 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
             ),
         },
     ),
+    # "jtmspro": TuyaBLECategoryInfo(
+    #     products={
+    #         **dict.fromkeys(
+    #             [
+    #                 "zl8r5v0x"
+    #             ],
+    #                 TuyaBLEProductInfo(  # device product_id
+    #                 name="Smart Lock",
+    #             ),
+    #         ),
+    #     },
+    # ),
     "szjqr": TuyaBLECategoryInfo(
         products={
             "3yqdo5yt": TuyaBLEProductInfo(  # device product_id
@@ -377,10 +390,13 @@ def get_device_info(device: TuyaBLEDevice) -> DeviceInfo | None:
             product_name,
             get_short_address(device.address),
         ),
-        sw_version=("%s (protocol %s)")
+        sw_version=("%s (protocol %s) (product_id id:%s ) (category:%s )")
         % (
             device.device_version,
             device.protocol_version,
+            device.product_id,
+            device.category,
         ),
+        
     )
     return result

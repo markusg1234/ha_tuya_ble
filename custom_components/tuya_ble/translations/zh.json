@@ -1,0 +1,286 @@
+{
+  "config": {
+    "abort": {
+      "no_unconfigured_devices": "未找到未配置的設備。"
+    },
+    "error": {
+      "device_not_registered": "設備未在 Tuya 雲端註冊",
+      "invalid_auth": "身份驗證無效",
+      "login_error": "登入錯誤 ({code})：{msg}"
+    },
+    "flow_title": "{name}",
+    "step": {
+      "device": {
+        "data": {
+          "address": "Tuya BLE 設備"
+        },
+        "description": "選擇要設置的 Tuya BLE 設備。設備必須使用行動應用程式在雲端註冊。如果有 Tuya 藍牙網關，最好解除設備的綁定。"
+      },
+      "login": {
+        "data": {
+          "access_id": "Tuya IoT Access ID",
+          "access_secret": "Tuya IoT Access Secret",
+          "country_code": "國家",
+          "password": "密碼",
+          "username": "帳號"
+        },
+        "description": "Tuya BLE 需要從 Tuya 雲端獲取加密金鑰。幾乎所有設備在設置期間只需訪問雲端一次。\n\n請參考 Tuya 整合的文件以檢索雲端憑據 https://www.home-assistant.io/integrations/tuya/\n\n輸入您的 Tuya 憑據。"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "low_battery": {
+        "name": "電池"
+      }
+    },
+    "button": {
+      "push": {
+        "name": "按下"
+      },
+      "door_lock": {
+        "name": "鎖門"
+      },
+      "door_unlock": {
+        "name": "解鎖"
+      }
+    },
+    "number": {
+      "brightness": {
+        "name": "亮度"
+      },
+      "carbon_dioxide_alarm_level": {
+        "name": "警報等級"
+      },
+      "countdown_duration": {
+        "name": "灌溉時長"
+      },
+      "countdown_duration_z1": {
+        "name": "灌溉時長 - 區域 1"
+      },
+      "countdown_duration_z2": {
+        "name": "灌溉時長 - 區域 2"
+      },
+      "down_position": {
+        "name": "下降位置"
+      },
+      "hold_time": {
+        "name": "保持時間"
+      },
+      "program_idle_position": {
+        "name": "閒置位置"
+      },
+      "program_repeats_count": {
+        "name": "重複次數"
+      },
+      "recommended_water_intake": {
+        "name": "建議飲水量"
+      },
+      "reporting_period": {
+        "name": "報告週期"
+      },
+      "up_position": {
+        "name": "上升位置"
+      },
+      "auto_lock_timing": {
+        "name": "自動鎖定計時"
+      }
+    },
+    "select": {
+      "beep_volume": {
+        "name": "鎖音量",
+        "state": {
+          "mute": "靜音",
+          "low": "低",
+          "normal": "正常",
+          "high": "高"
+        }
+      },
+      "fingerbot_mode": {
+        "name": "模式",
+        "state": {
+          "program": "程序",
+          "push": "按下",
+          "switch": "開關"
+        }
+      },
+      "reminder_mode": {
+        "name": "提醒模式",
+        "state": {
+          "interval_reminder": "間隔提醒",
+          "schedule_reminder": "計劃提醒"
+        }
+      },
+      "temperature_unit": {
+        "name": "溫度單位"
+      }
+    },
+    "sensor": {
+      "alarm_lock": {
+        "name": "警報",
+        "state": {
+          "wrong_finger": "錯誤指紋",
+          "wrong_password": "錯誤密碼",
+          "wrong_card": "錯誤卡片",
+          "low_battery": "電池電量低"
+        }
+      },
+      "battery": {
+        "name": "電池"
+      },
+      "battery_charging": {
+        "name": "電池充電",
+        "state": {
+          "charged": "已充滿",
+          "charging": "充電中",
+          "not_charging": "未充電"
+        }
+      },
+      "battery_state": {
+        "name": "電池狀態",
+        "state": {
+          "high": "高",
+          "low": "低",
+          "normal": "正常",
+          "poweroff": "電源關閉"
+        }
+      },
+      "carbon_dioxide": {
+        "name": "二氧化碳"
+      },
+      "carbon_dioxide_alarm": {
+        "name": "二氧化碳等級",
+        "state": {
+          "alarm": "警報",
+          "normal": "正常"
+        }
+      },
+      "humidity": {
+        "name": "濕度"
+      },
+      "low_battery": {
+        "name": "電池電量低"
+      },
+      "moisture": {
+        "name": "濕度"
+      },
+      "residual_electricity": {
+        "name": "電池"
+      },
+      "signal_strength": {
+        "name": "信號強度"
+      },
+      "temperature": {
+        "name": "溫度"
+      },
+      "time_left": {
+        "name": "剩餘灌溉時間"
+      },
+      "use_time_z1": {
+        "name": "上次灌溉時間 - 區域 1"
+      },
+      "use_time_z2": {
+        "name": "上次灌溉時間 - 區域 2"
+      },
+      "water_intake": {
+        "name": "飲水量"
+      },
+      "wrong_finger": {
+        "name": "錯誤指紋"
+      },
+      "wrong_password": {
+        "name": "錯誤密碼"
+      },
+      "lock_motor_state": {
+        "name": "馬達狀態",
+        "state": {
+          "locked": "已鎖定",
+          "unlocked": "已解鎖"
+        }
+      }
+    },
+    "switch": {
+      "antifreeze": {
+        "name": "防凍"
+      },
+      "carbon_dioxide_alarm_switch": {
+        "name": "警報啟用"
+      },
+      "carbon_dioxide_severely_exceed_alarm": {
+        "name": "嚴重超標警報"
+      },
+      "child_lock": {
+        "name": "兒童鎖"
+      },
+      "lock_motor_state": {
+        "name": "馬達狀態"
+      },
+      "auto_lock": {
+        "name": "自動鎖"
+      },
+      "low_battery_alarm": {
+        "name": "低電量警報"
+      },
+      "manual_control": {
+        "name": "手動控制"
+      },
+      "program": {
+        "name": "程序"
+      },
+      "program_repeat_forever": {
+        "name": "永久重複"
+      },
+      "programming_mode": {
+        "name": "程序模式"
+      },
+      "programming_switch": {
+        "name": "程序開關"
+      },
+      "reverse_positions": {
+        "name": "位置反轉"
+      },
+      "switch": {
+        "name": "開關"
+      },
+      "water_scale_proof": {
+        "name": "防水垢"
+      },
+      "water_valve": {
+        "name": "灌溉閥"
+      },
+      "water_valve_z1": {
+        "name": "灌溉閥 - 區域 1"
+      },
+      "water_valve_z2": {
+        "name": "灌溉閥 - 區域 2"
+      },
+      "window_check": {
+        "name": "窗戶檢查"
+      }
+    },
+    "text": {
+      "program": {
+        "name": "程序：位置[/時間];..."
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "device_not_registered": "設備未在 Tuya 雲端註冊",
+      "invalid_auth": "身份驗證無效",
+      "login_error": "登入錯誤 ({code})：{msg}"
+    },
+    "step": {
+      "login": {
+        "data": {
+          "access_id": "Tuya IoT Access ID",
+          "access_secret": "Tuya IoT Access Secret",
+          "country_code": "國家",
+          "password": "密碼",
+          "username": "帳號"
+        },
+        "description": "請參考 Tuya 整合的文件以檢索雲端憑據 https://www.home-assistant.io/integrations/tuya/\n\n輸入您的 Tuya 憑據。"
+      }
+    }
+  }
+}

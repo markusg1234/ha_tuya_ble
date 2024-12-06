@@ -27,6 +27,7 @@ from .const import (
     BATTERY_STATE_HIGH,
     BATTERY_STATE_LOW,
     BATTERY_STATE_NORMAL,
+    BATTERY_STATE_POWEROFF,
     BATTERY_CHARGED,
     BATTERY_CHARGING,
     BATTERY_NOT_CHARGING,
@@ -80,6 +81,17 @@ def battery_enum_getter(self: TuyaBLESensor) -> None:
     datapoint = self._device.datapoints[104]
     if datapoint:
         self._attr_native_value = datapoint.value * 20.0
+
+def get_door_lock_status(self: TuyaBLESensor) -> str:
+    datapoint = self._device.datapoints[self._mapping.dp_id]
+    if datapoint and datapoint.value is not None :
+      if datapoint.value == True:
+        self._attr_native_value = "unlocked"
+      else:
+        self._attr_native_value = "locked"
+    else:
+      self._attr_native_value = "unknown"
+
 @dataclass
 class TuyaBLECategorySensorMapping:
     products: dict[str, list[TuyaBLESensorMapping]] | None = None
@@ -127,7 +139,7 @@ mapping: dict[str, TuyaBLECategorySensorMapping] = {
     "ms": TuyaBLECategorySensorMapping(
         products={
             **dict.fromkeys(
-                ["ludzroix", "isk2p555"], # Smart Lock
+                ["ludzroix", "isk2p555","zl8r5v0x"], # Smart Lock
                 [
                     TuyaBLESensorMapping(
                         dp_id=21,
@@ -142,6 +154,63 @@ mapping: dict[str, TuyaBLECategorySensorMapping] = {
                         ),
                     ),
                     TuyaBLEBatteryMapping(dp_id=8),
+                ],
+            ),
+        }
+    ),
+    "jtmspro": TuyaBLECategorySensorMapping(
+        products={
+            **dict.fromkeys(
+                ["zl8r5v0x"], # Smart Lock
+                [
+                    TuyaBLESensorMapping(
+                        dp_id=21,
+                        description=SensorEntityDescription(
+                            key="alarm_lock",
+                            device_class=SensorDeviceClass.ENUM,
+                            options=[
+                              "wrong_finger",
+                              "wrong_password",
+                              "wrong_card",
+                              "low_battery"
+                            ],
+                        ),
+                    ),
+                    TuyaBLESensorMapping(
+                        dp_id=9,
+                        description=SensorEntityDescription(
+                            key="battery_state",
+                            icon="mdi:battery",
+                            device_class=SensorDeviceClass.ENUM,
+                            # entity_category=EntityCategory.DIAGNOSTIC,
+                            options=[
+                              "high",
+                              "medium",
+                              "low",
+                              "poweroff"
+                            ],
+                        ),
+                        icons=[
+                            "mdi:battery-alert",
+                            "mdi:battery-50",
+                            "mdi:battery-check",
+                            "mdi:battery-unknown",
+                        ],
+                    ),
+                    TuyaBLESensorMapping(
+                        dp_id=47,
+                        description=SensorEntityDescription(
+                            key="lock_motor_state",
+                            icon="mdi:door",
+                            # device_class=SensorDeviceClass.ENUM,
+                            # entity_category=EntityCategory.DIAGNOSTIC,
+                            # options=[
+                            #   "locked",
+                            #   "unlocked",
+                            # ],
+                        ),
+                        getter=get_door_lock_status
+                    ),
                 ],
             ),
         }
@@ -466,4 +535,33 @@ async def async_setup_entry(
                     mapping,
                 )
             )
+    # entities.append(
+    #     TuyaBLESensor(
+    #         hass,
+    #         data.coordinator,
+    #         data.device,
+    #         data.product,
+    #         TuyaBLESensorMapping(
+    #           dp_id=21,
+    #           description=SensorEntityDescription(
+    #             key="alarm_lock",
+    #             device_class=SensorDeviceClass.ENUM,
+    #             options=[
+    #                 "wrong_finger",
+    #                 "wrong_password",
+    #                 "low_battery",
+    #             ],
+    #           ),
+    #         )
+    #     )
+    # )
+    # entities.append(
+    #     TuyaBLESensor(
+    #         hass,
+    #         data.coordinator,
+    #         data.device,
+    #         data.product,
+    #         TuyaBLEBatteryMapping(dp_id=8)
+    #     )
+    # )
     async_add_entities(entities)

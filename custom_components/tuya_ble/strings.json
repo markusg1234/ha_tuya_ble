@@ -92,7 +92,12 @@
         }
       },
       "beep_volume": {
-          "name": "Lock Volume"
+        "name": "Lock Volume",
+        "state": {
+          "program": "Program",
+          "push": "Push",
+          "switch": "Switch"
+        }
       }
     },
     "binary_sensor": {
@@ -146,28 +151,35 @@
         "name": "Water intake"
       },
       "residual_electricity": {
-          "name": "Battery"
+        "name": "Battery"
       },
       "alarm_lock": {
-          "name": "Alarm"
-      },
-      "wrong_finger": {
-          "name": "Wrong Fingerprint"
-      },
-      "wrong_password": {
-          "name": "Wrong Password"
+        "name": "Alarm",
+        "state": {
+          "wrong_finger": "Wrong Fingerprint",
+          "wrong_password": "Wrong Password",
+          "wrong_card": "Wrong Card",
+          "low_battery": "Low Battery"
+        }
       },
       "low_battery": {
-          "name": "Low Battery"
+        "name": "Low Battery"
       },
       "time_left": {
-          "name": "Remaining irrigation time"
+        "name": "Remaining irrigation time"
       },
       "use_time_z1": {
-          "name": "Last irrigation time - Zone 1"
+        "name": "Last irrigation time - Zone 1"
       },
       "use_time_z2": {
-          "name": "Last irrigation time - Zone 2"
+        "name": "Last irrigation time - Zone 2"
+      },
+      "lock_motor_state": {
+        "name": "Motor State",
+        "state": {
+          "locked": "Locked",
+          "unlocked": "Unlocked"
+        }
       }
     },
     "switch": {

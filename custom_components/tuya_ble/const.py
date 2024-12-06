@@ -34,8 +34,9 @@ TUYA_API_FACTORY_INFO_URL: Final = "/v1.0/iot-03/devices/factory-infos?device_id
 TUYA_FACTORY_INFO_MAC: Final = "mac"
 
 BATTERY_STATE_LOW: Final = "low"
-BATTERY_STATE_NORMAL: Final = "normal"
+BATTERY_STATE_NORMAL: Final = "medium"
 BATTERY_STATE_HIGH: Final = "high"
+BATTERY_STATE_POWEROFF: Final = "poweroff"
 
 BATTERY_NOT_CHARGING: Final = "not_charging"
 BATTERY_CHARGING: Final = "charging"
