@@ -7,6 +7,7 @@ import secrets
 import time
 from collections.abc import Callable
 from struct import pack, unpack
+from typing import Any, Hashable
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
@@ -62,6 +63,9 @@ class TuyaBLEDataPoint:
         self._value = value
         self._changed_by_device = False
         self._update_from_device(timestamp, flags, type, value)
+
+    def __repr__(self) -> str:
+        return f"<TuyaBLEDataPoint id={self.id} timestamp={self.timestamp} type={self.type} flags={self.flags} value={self.value}>"
 
     def _update_from_device(
         self,
@@ -421,6 +425,17 @@ class TuyaBLEDevice:
     def datapoints(self) -> TuyaBLEDataPoints:
         """Get datapoints exposed by device."""
         return self._datapoints
+
+    @property
+    def datapoint_log_payload(self) -> dict[Hashable, Any]:
+        item = {}
+        for key, value in self.datapoints.__dict__().items():
+            if isinstance(value, TuyaBLEDataPoint):
+                printable_value = value.value
+            else:
+                printable_value = value
+            item[key] = printable_value
+        return item
 
     def get_or_create_datapoint(
         self,
@@ -1248,7 +1263,7 @@ class TuyaBLEDevice:
 
         if packet_num < self._input_expected_packet_num:
             _LOGGER.error(
-                "%s: Unexpcted packet (number %s) in notifications, " "expected %s",
+                "%s: Unexpected packet (number %s) in notifications, " "expected %s",
                 self.address,
                 packet_num,
                 self._input_expected_packet_num,
@@ -1274,7 +1289,7 @@ class TuyaBLEDevice:
 
         if len(self._input_buffer) > self._input_expected_length:
             _LOGGER.error(
-                "%s: Unexpcted length of data in notifications, "
+                "%s: Unexpected length of data in notifications, "
                 "received %s expected %s",
                 self.address,
                 len(self._input_buffer),
@@ -1285,10 +1300,11 @@ class TuyaBLEDevice:
         elif len(self._input_buffer) == self._input_expected_length:
             try:
                 self._parse_input()
-            except TuyaBLEError:
+            except TuyaBLEError as err:
                 _LOGGER.error(
                     "%s: Error parsing input: %s",
                     self.address,
+                    err,
                     exc_info=True,
                 )
                 self._clean_input()

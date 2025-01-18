@@ -104,8 +104,8 @@ mapping: dict[str, TuyaBLECategoryCoverMapping] = {
                 TuyaBLECoverMapping(
                     description=CoverEntityDescription(key="ble_curtain_controller"),
                     cover_state_dp_id=1,
-                    cover_position_dp_id=3,
                     cover_position_set_dp=2,
+                    cover_position_dp_id=3,
                     cover_battery_dp_id=13,
                 )
             ],
@@ -183,8 +183,10 @@ class TuyaBLECover(TuyaBLEEntity, CoverEntity):
                 if self._attr_current_cover_position == 0:
                     self._attr_is_closed = True
                     self._attr_is_closing = False
-                if self._attr_current_cover_position == 100:
+                else:
                     self._attr_is_closed = False
+
+                if self._attr_current_cover_position == 100:
                     self._attr_is_opening = False
 
         self.async_write_ha_state()
