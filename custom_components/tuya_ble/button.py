@@ -1,17 +1,19 @@
 """The Tuya BLE integration."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-
 import logging
 from typing import Callable
 
 from homeassistant.components.button import (
     ButtonEntityDescription,
+    ButtonDeviceClass,
     ButtonEntity,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
@@ -21,20 +23,19 @@ from .tuya_ble import TuyaBLEDataPointType, TuyaBLEDevice
 
 _LOGGER = logging.getLogger(__name__)
 
-
 TuyaBLEButtonIsAvailable = Callable[["TuyaBLEButton", TuyaBLEProductInfo], bool] | None
-
 
 @dataclass
 class TuyaBLEButtonMapping:
+    """Model a DP, description and default values"""
     dp_id: int
     description: ButtonEntityDescription
     force_add: bool = True
     dp_type: TuyaBLEDataPointType | None = None
     is_available: TuyaBLEButtonIsAvailable = None
 
-
 def is_fingerbot_in_push_mode(self: TuyaBLEButton, product: TuyaBLEProductInfo) -> bool:
+    """Check if the fingerbot is in push mode."""
     result: bool = True
     if product.fingerbot:
         datapoint = self._device.datapoints[product.fingerbot.mode]
@@ -42,9 +43,9 @@ def is_fingerbot_in_push_mode(self: TuyaBLEButton, product: TuyaBLEProductInfo) 
             result = datapoint.value == 0
     return result
 
-
 @dataclass
 class TuyaBLEFingerbotModeMapping(TuyaBLEButtonMapping):
+    """Describes availability of a given button"""
     description: ButtonEntityDescription = field(
         default_factory=lambda: ButtonEntityDescription(
             key="push",
@@ -52,14 +53,52 @@ class TuyaBLEFingerbotModeMapping(TuyaBLEButtonMapping):
     )
     is_available: TuyaBLEButtonIsAvailable = is_fingerbot_in_push_mode
 
+@dataclass
+class TuyaBLELockMapping(TuyaBLEButtonMapping):
+    """Describes availability of a given button"""
+
+    description: ButtonEntityDescription = field(
+        default_factory=lambda: ButtonEntityDescription(
+            key="push",
+        )
+    )
+    is_available: TuyaBLEButtonIsAvailable = 0
+
 
 @dataclass
 class TuyaBLECategoryButtonMapping:
+    """Describes a dict of products and their mappings"""
     products: dict[str, list[TuyaBLEButtonMapping]] | None = None
     mapping: list[TuyaBLEButtonMapping] | None = None
 
-
 mapping: dict[str, TuyaBLECategoryButtonMapping] = {
+    "dcb": TuyaBLECategoryButtonMapping(
+        products={
+            **dict.fromkeys(
+                ["ajrhf1aj", "z5ztlw3k"], # PARKSIDE Smart battery
+                [
+                    TuyaBLEButtonMapping(
+                        dp_id=115,
+                        description=ButtonEntityDescription(
+                            key="battery_finder",
+                            icon="mdi:find-replace",
+                            entity_category=EntityCategory.DIAGNOSTIC,
+                        ),
+                    ),
+                    TuyaBLEButtonMapping(
+                        dp_id=162,
+                        description=ButtonEntityDescription(
+                            key="factory_data_reset",
+                            device_class=ButtonDeviceClass.RESTART,
+                            icon="mdi:restore",
+                            entity_category=EntityCategory.CONFIG,
+                        ),
+                        dp_type=TuyaBLEDataPointType.DT_RAW,
+                    ),
+                ],
+            ),
+        },
+    ),
     "szjqr": TuyaBLECategoryButtonMapping(
         products={
             **dict.fromkeys(
@@ -72,8 +111,11 @@ mapping: dict[str, TuyaBLECategoryButtonMapping] = {
                 [
                     "blliqpsj",
                     "ndvkgsrm",
-                    "yiihr7zh", 
-                    "neq16kgd"
+                    "riecov42",
+                    "yiihr7zh",
+                    "neq16kgd",
+                    "6jcvqwh0",
+                    "h8kdwywx",
                 ],  # Fingerbot Plus
                 [
                     TuyaBLEFingerbotModeMapping(dp_id=2),
@@ -95,10 +137,19 @@ mapping: dict[str, TuyaBLECategoryButtonMapping] = {
             ),
         },
     ),
+    "kg": TuyaBLECategoryButtonMapping(
+        products={
+            **dict.fromkeys(
+                ["mknd4lci", "riecov42", "bs3ubslo"],  # Fingerbot Plus
+                [
+                    TuyaBLEFingerbotModeMapping(dp_id=108),
+                ],
+            ),
+        },
+    ),
     "znhsb": TuyaBLECategoryButtonMapping(
         products={
-            "cdlandip":  # Smart water bottle
-            [
+            "cdlandip": [ # Smart water bottle
                 TuyaBLEButtonMapping(
                     dp_id=109,
                     description=ButtonEntityDescription(
@@ -108,10 +159,45 @@ mapping: dict[str, TuyaBLECategoryButtonMapping] = {
             ],
         },
     ),
+    "jtmspro": TuyaBLECategoryButtonMapping(
+        products={
+            "xicdxood": [  # Raycube K7 Pro+
+                TuyaBLEButtonMapping(
+                    dp_id=71,  # On click it opens the lock, just like connecting via Smart Life App
+                    # and holding the center button
+                    description=ButtonEntityDescription(
+                        key="bluetooth_unlock",
+                        icon="mdi:lock-open-variant-outline",
+                    ),
+                ),
+            ],
+        },
+    ),
+    "ms": TuyaBLECategoryButtonMapping(
+        products={
+            **dict.fromkeys(
+                ["okkyfgfs"],  # Smart Lock
+                [
+                    TuyaBLEButtonMapping(
+                        dp_id=6,
+                        description=ButtonEntityDescription(
+                            key="bluetooth_unlock",
+                        ),
+                    ),
+                    # TuyaBLEButtonMapping(
+                    #    dp_id=12,
+                    #    description=ButtonEntityDescription(
+                    #        key="unlock_fingerprint",
+                    #    ),
+                    # ),
+                ],
+            ),
+        }
+    ),
 }
 
-
 def get_mapping_by_device(device: TuyaBLEDevice) -> list[TuyaBLECategoryButtonMapping]:
+    """Get the button mapping for a device."""
     category = mapping.get(device.category)
     if category is not None and category.products is not None:
         product_mapping = category.products.get(device.product_id)
@@ -119,11 +205,7 @@ def get_mapping_by_device(device: TuyaBLEDevice) -> list[TuyaBLECategoryButtonMa
             return product_mapping
         if category.mapping is not None:
             return category.mapping
-        else:
-            return []
-    else:
-        return []
-
+    return []
 
 class TuyaBLEButton(TuyaBLEEntity, ButtonEntity):
     """Representation of a Tuya BLE Button."""
@@ -136,18 +218,24 @@ class TuyaBLEButton(TuyaBLEEntity, ButtonEntity):
         product: TuyaBLEProductInfo,
         mapping: TuyaBLEButtonMapping,
     ) -> None:
+        """Initialize the button."""
         super().__init__(hass, coordinator, device, product, mapping.description)
         self._mapping = mapping
 
     def press(self) -> None:
         """Press the button."""
+
         datapoint = self._device.datapoints.get_or_create(
             self._mapping.dp_id,
             TuyaBLEDataPointType.DT_BOOL,
             False,
         )
         if datapoint:
-            self._hass.create_task(datapoint.set_value(not bool(datapoint.value)))
+            if self._product.lock:
+                # Lock needs true to activate lock/unlock commands
+                self._hass.create_task(datapoint.set_value(True))
+            else:
+                self._hass.create_task(datapoint.set_value(not bool(datapoint.value)))
 
     @property
     def available(self) -> bool:
@@ -157,13 +245,12 @@ class TuyaBLEButton(TuyaBLEEntity, ButtonEntity):
             result = self._mapping.is_available(self, self._product)
         return result
 
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Tuya BLE sensors."""
+    """Set up the Tuya BLE buttons."""
     data: TuyaBLEData = hass.data[DOMAIN][entry.entry_id]
     mappings = get_mapping_by_device(data.device)
     entities: list[TuyaBLEButton] = []

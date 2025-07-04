@@ -1,8 +1,8 @@
 """The Tuya BLE integration."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-
 import logging
 from typing import Callable
 
@@ -17,9 +17,7 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import (
-    DOMAIN,
-)
+from .const import DOMAIN
 from .devices import TuyaBLEData, TuyaBLEEntity, TuyaBLEProductInfo
 from .tuya_ble import TuyaBLEDataPointType, TuyaBLEDevice
 
@@ -27,50 +25,89 @@ _LOGGER = logging.getLogger(__name__)
 
 SIGNAL_STRENGTH_DP_ID = -1
 
-
 TuyaBLEBinarySensorIsAvailable = (
     Callable[["TuyaBLEBinarySensor", TuyaBLEProductInfo], bool] | None
 )
 
-
 @dataclass
 class TuyaBLEBinarySensorMapping:
+    """Model a DP for a binary sensor entity."""
     dp_id: int
     description: BinarySensorEntityDescription
     force_add: bool = True
     dp_type: TuyaBLEDataPointType | None = None
     getter: Callable[[TuyaBLEBinarySensor], None] | None = None
-    #coefficient: float = 1.0
-    #icons: list[str] | None = None
+    # coefficient: float = 1.0
+    # icons: list[str] | None = None
     is_available: TuyaBLEBinarySensorIsAvailable = None
-
 
 @dataclass
 class TuyaBLECategoryBinarySensorMapping:
+    """Maps between a dict of products and the sensors"""
     products: dict[str, list[TuyaBLEBinarySensorMapping]] | None = None
     mapping: list[TuyaBLEBinarySensorMapping] | None = None
 
-
 mapping: dict[str, TuyaBLECategoryBinarySensorMapping] = {
+    "dcb": TuyaBLECategoryBinarySensorMapping(
+        products={
+            **dict.fromkeys(
+                [
+                    "ajrhf1aj", 
+                    "z5ztlw3k",
+                ], # PARKSIDE Smart battery
+                [
+                    TuyaBLEBinarySensorMapping(
+                        dp_id=171,
+                        description=BinarySensorEntityDescription(
+                            key="cw_or_ccw_display",
+                            icon="mdi:rotate-3d-variant",
+                        ),
+                    ),
+                ],
+            ),
+        },
+    ),
     "wk": TuyaBLECategoryBinarySensorMapping(
         products={
-            "drlajpqc": [  # Thermostatic Radiator Valve
-                TuyaBLEBinarySensorMapping(
-                    dp_id=105,
-                    description=BinarySensorEntityDescription(
-                        key="battery",
-                        #icon="mdi:battery-alert",
-                        device_class=BinarySensorDeviceClass.BATTERY,
-                        entity_category=EntityCategory.DIAGNOSTIC,
-                    ),
-                ),
-            ],
+            **dict.fromkeys(
+                [
+                    "drlajpqc",
+                    "nhj2j7su",
+                    "zmachryv",
+                ],
+                [  # Thermostatic Radiator Valve
+                    TuyaBLEBinarySensorMapping(
+                        dp_id=105,
+                        description=BinarySensorEntityDescription(
+                            key="battery",
+                            # icon="mdi:battery-alert",
+                            device_class=BinarySensorDeviceClass.BATTERY,
+                            entity_category=EntityCategory.DIAGNOSTIC,
+                        ),
+                    )
+                ],
+            ),
         },
+    ),
+    "ms": TuyaBLECategoryBinarySensorMapping(
+        products={
+            **dict.fromkeys(
+                ["okkyfgfs"],  # Smart Lock
+                [
+                    TuyaBLEBinarySensorMapping(
+                        dp_id=47,
+                        description=BinarySensorEntityDescription(
+                            key="lock_motor_state",
+                        ),
+                    ),
+                ],
+            ),
+        }
     ),
 }
 
-
 def get_mapping_by_device(device: TuyaBLEDevice) -> list[TuyaBLEBinarySensorMapping]:
+    """Get the binary sensor mapping for a device."""
     category = mapping.get(device.category)
     if category is not None and category.products is not None:
         product_mapping = category.products.get(device.product_id)
@@ -78,11 +115,8 @@ def get_mapping_by_device(device: TuyaBLEDevice) -> list[TuyaBLEBinarySensorMapp
             return product_mapping
         if category.mapping is not None:
             return category.mapping
-        else:
-            return []
-    else:
-        return []
 
+    return []
 
 class TuyaBLEBinarySensor(TuyaBLEEntity, BinarySensorEntity):
     """Representation of a Tuya BLE binary sensor."""
@@ -95,6 +129,7 @@ class TuyaBLEBinarySensor(TuyaBLEEntity, BinarySensorEntity):
         product: TuyaBLEProductInfo,
         mapping: TuyaBLEBinarySensorMapping,
     ) -> None:
+        """Initialize the binary sensor."""
         super().__init__(hass, coordinator, device, product, mapping.description)
         self._mapping = mapping
 
@@ -107,7 +142,7 @@ class TuyaBLEBinarySensor(TuyaBLEEntity, BinarySensorEntity):
             datapoint = self._device.datapoints[self._mapping.dp_id]
             if datapoint:
                 self._attr_is_on = bool(datapoint.value)
-                '''
+                """
                 if datapoint.type == TuyaBLEDataPointType.DT_ENUM:
                     if self.entity_description.options is not None:
                         if datapoint.value >= 0 and datapoint.value < len(
@@ -129,7 +164,7 @@ class TuyaBLEBinarySensor(TuyaBLEEntity, BinarySensorEntity):
                     )
                 else:
                     self._attr_native_value = datapoint.value
-                '''
+                """
         self.async_write_ha_state()
 
     @property
@@ -140,13 +175,12 @@ class TuyaBLEBinarySensor(TuyaBLEEntity, BinarySensorEntity):
             result = self._mapping.is_available(self, self._product)
         return result
 
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Tuya BLE sensors."""
+    """Set up the Tuya BLE binary sensors."""
     data: TuyaBLEData = hass.data[DOMAIN][entry.entry_id]
     mappings = get_mapping_by_device(data.device)
     entities: list[TuyaBLEBinarySensor] = []
