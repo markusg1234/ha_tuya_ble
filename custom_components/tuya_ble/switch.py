@@ -189,7 +189,8 @@ mapping: dict[str, TuyaBLECategorySwitchMapping] = {
                     "blliqpsj",
                     "ndvkgsrm",
                     "yiihr7zh",
-                    "neq16kgd"
+                    "neq16kgd",
+                    "6jcvqwh0"
                 ],  # Fingerbot Plus
                 [
                     TuyaBLEFingerbotSwitchMapping(dp_id=2),
