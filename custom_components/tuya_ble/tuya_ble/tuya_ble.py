@@ -24,8 +24,15 @@ from Crypto.Cipher import AES
 from .const import (
     CHARACTERISTIC_NOTIFY,
     CHARACTERISTIC_WRITE,
+    CONNECT_ATTEMPTS,
+    DEFAULT_IDLE_DISCONNECT_DELAY,
+    NOTIFY_ATTEMPTS,
+    NOTIFY_RETRY_DELAY,
+    POST_CONNECT_DELAY,
     GATT_MTU,
     MANUFACTURER_DATA_ID,
+    RECONNECT_BACKOFF_MAX,
+    RECONNECT_BACKOFF_MIN,
     RESPONSE_WAIT_TIMEOUT,
     SERVICE_UUID,
     TuyaBLECode,
@@ -214,6 +221,8 @@ class TuyaBLEDevice:
         device_manager: AbstaractTuyaBLEDeviceManager,
         ble_device: BLEDevice,
         advertisement_data: AdvertisementData | None = None,
+        keep_connection: bool = True,
+        idle_disconnect_delay: int = DEFAULT_IDLE_DISCONNECT_DELAY,
     ) -> None:
         """Init the TuyaBLE."""
         self._device_manager = device_manager
@@ -224,6 +233,16 @@ class TuyaBLEDevice:
         self._connect_lock = asyncio.Lock()
         self._client: BleakClientWithServiceCache | None = None
         self._expected_disconnect = False
+        # Lifecycle / connection policy
+        self._stopped = False
+        self._keep_connection = keep_connection
+        self._idle_disconnect_delay = idle_disconnect_delay
+        self._idle_task: asyncio.Task | None = None
+        self._idle_disconnecting = False
+        self._reconnect_task: asyncio.Task | None = None
+        self._reconnect_backoff = RECONNECT_BACKOFF_MIN
+        self._last_connect_error: str | None = None
+        self._last_connected_at: float | None = None
         self._connected_callbacks: list[Callable[[], None]] = []
         self._callbacks: list[Callable[[list[TuyaBLEDataPoint]], None]] = []
         self._disconnected_callbacks: list[Callable[[], None]] = []
@@ -485,12 +504,37 @@ class TuyaBLEDevice:
     async def stop(self) -> None:
         """Stop the TuyaBLE."""
         _LOGGER.debug("%s: Stop", self.address)
-        await self._execute_disconnect()
+        # Signal immediately so running connect/reconnect loops abort
+        # instead of waiting for RESPONSE_WAIT_TIMEOUT.
+        self._stopped = True
+        self._expected_disconnect = True
+        for task in (self._idle_task, self._reconnect_task):
+            if task and not task.done():
+                task.cancel()
+        self._idle_task = None
+        self._reconnect_task = None
+        for future in list(self._input_expected_responses.values()):
+            if future and not future.done():
+                future.set_result(None)
+        self._input_expected_responses.clear()
+        try:
+            await asyncio.wait_for(self._execute_disconnect(), 10)
+        except (asyncio.TimeoutError, *BLEAK_EXCEPTIONS):
+            _LOGGER.debug("%s: Stop, disconnect timed out/failed", self.address, exc_info=True)
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.debug("%s: Stop, unexpected error", self.address, exc_info=True)
+        finally:
+            self._client = None
 
     def _disconnected(self, client: BleakClientWithServiceCache) -> None:
         """Disconnected callback."""
         was_paired = self._is_paired
         self._is_paired = False
+        if self._idle_disconnecting:
+            # On-demand mode: link dropped intentionally after inactivity,
+            # entities stay available.
+            _LOGGER.debug("%s: Idle disconnect done; RSSI: %s", self.address, self.rssi)
+            return
         self._fire_disconnected_callbacks()
         if self._expected_disconnect:
             _LOGGER.debug(
@@ -505,13 +549,13 @@ class TuyaBLEDevice:
             self.address,
             self.rssi,
         )
-        if was_paired:
+        if was_paired and self._keep_connection:
             _LOGGER.debug(
                 "%s: Scheduling reconnect; RSSI: %s",
                 self.address,
                 self.rssi,
             )
-            asyncio.create_task(self._reconnect())
+            self._schedule_reconnect(0)
 
     def _disconnect(self) -> None:
         """Disconnect from device."""
@@ -540,8 +584,12 @@ class TuyaBLEDevice:
     async def _ensure_connected(self) -> None:
         """Ensure connection to device is established."""
         global global_connect_lock
-        if self._expected_disconnect:
+        if self._stopped:
             return
+        # Wait for a running idle disconnect to finish before reconnecting.
+        while self._idle_disconnecting:
+            await asyncio.sleep(0.05)
+        self._expected_disconnect = False
         if self._connect_lock.locked():
             _LOGGER.debug(
                 "%s: Connection already in progress,"
@@ -556,16 +604,26 @@ class TuyaBLEDevice:
             await asyncio.sleep(0.01)
             if self._client and self._client.is_connected and self._is_paired:
                 return
-            attempts_count = 100
-            while attempts_count > 0:
-                attempts_count -= 1
-                if attempts_count == 0:
+            attempts_count = CONNECT_ATTEMPTS
+            attempt = 0
+            while True:
+                if self._stopped:
+                    _LOGGER.debug("%s: Connecting aborted (stop requested)", self.address)
+                    return
+                if attempt >= attempts_count:
+                    self._last_connect_error = "all connection attempts failed"
                     _LOGGER.error(
-                        "%s: Connecting, all attempts failed; RSSI: %s",
+                        "%s: Connecting, all %s attempts failed; RSSI: %s",
                         self.address,
+                        attempts_count,
                         self.rssi,
                     )
+                    self._schedule_reconnect(self._next_backoff())
                     raise BleakNotFoundError()
+                if attempt > 0:
+                    # Short in-call backoff between attempts (1s, 2s, 4s, 8s)
+                    await asyncio.sleep(min(2 ** (attempt - 1), 8))
+                attempt += 1
                 try:
                     async with global_connect_lock:
                         _LOGGER.debug(
@@ -601,14 +659,12 @@ class TuyaBLEDevice:
                     _LOGGER.debug("%s: Connected; RSSI: %s",
                                   self.address, self.rssi)
                     self._client = client
-                    try:
-                        await self._client.start_notify(
-                            CHARACTERISTIC_NOTIFY, self._notification_handler
-                        )
-                    except:  # [BLEAK_EXCEPTIONS, BleakNotFoundError]:
-                        self._client = None
-                        _LOGGER.error("%s: starting notifications failed",
-                                      self.address, exc_info=True)
+                    # Let the link settle before the first GATT write; the
+                    # ESP32 stack otherwise tends to answer with GATT error
+                    # 133 on the notify descriptor (esp. via ESPHome proxies).
+                    await asyncio.sleep(POST_CONNECT_DELAY)
+                    if not await self._start_notify_with_retry():
+                        await self._drop_client()
                         continue
                 else:
                     continue
@@ -623,16 +679,16 @@ class TuyaBLEDevice:
                             0,
                             True,
                         ):
-                            self._client = None
                             _LOGGER.error(
                                 "%s: Sending device info request failed",
                                 self.address,
                             )
+                            await self._drop_client()
                             continue
                     except:  # [BLEAK_EXCEPTIONS, BleakNotFoundError]:
-                        self._client = None
                         _LOGGER.error("%s: Sending device info request failed",
                                       self.address, exc_info=True)
+                        await self._drop_client()
                         continue
                 else:
                     continue
@@ -646,27 +702,33 @@ class TuyaBLEDevice:
                             0,
                             True,
                         ):
-                            self._client = None
                             _LOGGER.error(
                                 "%s: Sending pairing request failed",
                                 self.address,
                             )
+                            await self._drop_client()
                             continue
                     except:  # [BLEAK_EXCEPTIONS, BleakNotFoundError]:
-                        self._client = None
                         _LOGGER.error("%s: Sending pairing request failed",
                                       self.address, exc_info=True)
+                        await self._drop_client()
                         continue
                 else:
                     continue
 
                 break
 
+        if self._stopped:
+            return
         if self._client:
             if self._client.is_connected:
                 if self._is_paired:
                     _LOGGER.debug("%s: Successfully connected", self.address)
+                    self._reconnect_backoff = RECONNECT_BACKOFF_MIN
+                    self._last_connect_error = None
+                    self._last_connected_at = time.monotonic()
                     self._fire_connected_callbacks()
+                    self._touch()
                 else:
                     _LOGGER.error("%s: Connected but not paired", self.address)
             else:
@@ -674,27 +736,132 @@ class TuyaBLEDevice:
         else:
             _LOGGER.error("%s: No client device", self.address)
 
-    async def _reconnect(self) -> None:
-        """Attempt a reconnect"""
+    async def _start_notify_with_retry(self) -> bool:
+        """Subscribe to notifications; retry transient GATT errors (e.g. 133)."""
+        for attempt in range(1, NOTIFY_ATTEMPTS + 1):
+            if self._stopped or not (self._client and self._client.is_connected):
+                return False
+            try:
+                await self._client.start_notify(
+                    CHARACTERISTIC_NOTIFY, self._notification_handler
+                )
+                return True
+            except BLEAK_EXCEPTIONS as ex:
+                if attempt < NOTIFY_ATTEMPTS and self._client.is_connected:
+                    _LOGGER.warning(
+                        "%s: starting notifications failed (attempt %s/%s, retrying): %s",
+                        self.address, attempt, NOTIFY_ATTEMPTS, ex,
+                    )
+                    await asyncio.sleep(NOTIFY_RETRY_DELAY)
+                    continue
+                _LOGGER.error("%s: starting notifications failed",
+                              self.address, exc_info=True)
+                return False
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.error("%s: starting notifications failed",
+                              self.address, exc_info=True)
+                return False
+        return False
+
+    async def _drop_client(self) -> None:
+        """Forget the current client and really close the link so the
+        adapter/proxy slot is freed before the next attempt."""
+        client = self._client
+        self._client = None
+        self._is_paired = False
+        if client is None:
+            return
+        try:
+            self._expected_disconnect = True
+            await asyncio.wait_for(client.disconnect(), 5)
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.debug("%s: dropping client failed", self.address, exc_info=True)
+        finally:
+            if not self._stopped:
+                self._expected_disconnect = False
+
+    def _next_backoff(self) -> float:
+        delay = self._reconnect_backoff
+        self._reconnect_backoff = min(self._reconnect_backoff * 2, RECONNECT_BACKOFF_MAX)
+        return delay
+
+    def _schedule_reconnect(self, delay: float) -> None:
+        """Schedule a single reconnect attempt after delay (deduplicated)."""
+        if self._stopped:
+            return
+        if self._reconnect_task and not self._reconnect_task.done():
+            return
+        self._reconnect_task = asyncio.create_task(self._reconnect(delay))
+
+    async def _reconnect(self, delay: float = 0) -> None:
+        """Attempt a reconnect after an optional delay."""
+        if delay > 0:
+            _LOGGER.debug("%s: Reconnect in %.0f s", self.address, delay)
+            await asyncio.sleep(delay)
+        if self._stopped:
+            return
         _LOGGER.debug("%s: Reconnect, ensuring connection", self.address)
         async with self._seq_num_lock:
             self._current_seq_num = 1
         try:
-            if self._expected_disconnect:
-                return
             await self._ensure_connected()
-            if self._expected_disconnect:
+            if self._stopped:
                 return
             _LOGGER.debug("%s: Reconnect, connection ensured", self.address)
-        except BLEAK_EXCEPTIONS:  # BleakNotFoundError:
-            _LOGGER.debug(
-                "%s: Reconnect, failed to ensure connection - backing off",
-                self.address,
-                exc_info=True,
-            )
-            await asyncio.sleep(BLEAK_BACKOFF_TIME)
-            _LOGGER.debug("%s: Reconnecting again", self.address)
-            asyncio.create_task(self._reconnect())
+        except BLEAK_EXCEPTIONS:
+            # _ensure_connected already scheduled the next attempt with backoff
+            _LOGGER.debug("%s: Reconnect failed", self.address)
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.debug("%s: Reconnect, unexpected error", self.address, exc_info=True)
+
+    # ---- on-demand connection handling ----
+
+    def _touch(self) -> None:
+        """Note activity; (re)start idle disconnect timer in on-demand mode."""
+        if self._keep_connection or self._stopped:
+            return
+        if self._idle_task and not self._idle_task.done():
+            self._idle_task.cancel()
+        self._idle_task = asyncio.create_task(self._idle_disconnect())
+
+    async def _idle_disconnect(self) -> None:
+        try:
+            await asyncio.sleep(self._idle_disconnect_delay)
+            # Postpone while an operation is running or a response is pending
+            while self._operation_lock.locked() or self._input_expected_responses:
+                await asyncio.sleep(1)
+            if self._stopped or not (self._client and self._client.is_connected):
+                return
+            _LOGGER.debug("%s: Idle for %s s, disconnecting", self.address, self._idle_disconnect_delay)
+            self._idle_disconnecting = True
+            try:
+                await asyncio.wait_for(self._execute_disconnect(), 10)
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.debug("%s: Idle disconnect failed", self.address, exc_info=True)
+            finally:
+                # give bleak a moment to deliver the disconnected callback
+                await asyncio.sleep(0.5)
+                self._idle_disconnecting = False
+                self._expected_disconnect = False
+                self._is_paired = False
+        except asyncio.CancelledError:
+            pass
+
+    @property
+    def keep_connection(self) -> bool:
+        return self._keep_connection
+
+    @property
+    def is_connected(self) -> bool:
+        return bool(self._client and self._client.is_connected and self._is_paired)
+
+    @property
+    def last_connect_error(self) -> str | None:
+        return self._last_connect_error
+
+    @property
+    def last_connected_at(self) -> float | None:
+        return self._last_connected_at
 
     @staticmethod
     def _calc_crc16(data: bytes) -> int:
@@ -805,12 +972,13 @@ class TuyaBLEDevice:
         # retry: int | None = None,
     ) -> None:
         """Send packet to device and optional read response."""
-        if self._expected_disconnect:
+        if self._stopped:
             return
         await self._ensure_connected()
-        if self._expected_disconnect:
+        if self._stopped:
             return
         await self._send_packet_while_connected(code, data, 0, wait_for_response)
+        self._touch()
 
     async def _send_response(
         self,
@@ -867,6 +1035,9 @@ class TuyaBLEDevice:
                 )
                 result = False
             self._input_expected_responses.pop(seq_num, None)
+            if self._stopped:
+                result = False
+        self._touch()
 
         return result
 
@@ -901,10 +1072,10 @@ class TuyaBLEDevice:
                 raise
 
     async def _resend_packets(self, packets: list[bytes]) -> None:
-        if self._expected_disconnect:
+        if self._stopped:
             return
         await self._ensure_connected()
-        if self._expected_disconnect:
+        if self._stopped:
             return
         await self._int_send_packet_while_connected(packets)
 
@@ -925,7 +1096,7 @@ class TuyaBLEDevice:
             if self._is_paired:
                 asyncio.create_task(self._resend_packets(packets))
             else:
-                asyncio.create_task(self._reconnect())
+                self._schedule_reconnect(0)
             raise BleakError from ex
         except BleakError as ex:
             # Disconnect so we can reset state and try again
@@ -938,7 +1109,7 @@ class TuyaBLEDevice:
             if self._is_paired:
                 asyncio.create_task(self._resend_packets(packets))
             else:
-                asyncio.create_task(self._reconnect())
+                self._schedule_reconnect(0)
             raise
 
     async def _int_send_packets_locked(self, packets: list[bytes]) -> None:

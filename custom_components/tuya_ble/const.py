@@ -2,7 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
-from homeassistant.backports.enum import StrEnum
+from enum import StrEnum
 from tuya_iot import TuyaCloudOpenAPIEndpoint
 from typing_extensions import Final
 
@@ -20,6 +20,12 @@ CONF_PRODUCT_ID: Final = "product_id"
 CONF_DEVICE_NAME: Final = "device_name"
 CONF_PRODUCT_MODEL: Final = "product_model"
 CONF_PRODUCT_NAME: Final = "product_name"
+
+# Connection policy (options)
+CONF_KEEP_CONNECTION: Final = "keep_connection"
+CONF_IDLE_DISCONNECT_DELAY: Final = "idle_disconnect_delay"
+DEFAULT_KEEP_CONNECTION: Final = True
+DEFAULT_IDLE_DISCONNECT_DELAY: Final = 30
 
 CONF_AUTH_TYPE = "auth_type"
 CONF_PROJECT_TYPE = "tuya_project_type"

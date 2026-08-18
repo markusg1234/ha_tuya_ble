@@ -1,0 +1,109 @@
+{
+  "config": {
+    "abort": {
+      "no_unconfigured_devices": "Keine unkonfigurierten Geräte gefunden."
+    },
+    "error": {
+      "device_not_registered": "Gerät ist nicht in der Tuya-Cloud registriert",
+      "invalid_auth": "Ungültige Anmeldedaten",
+      "login_error": "Anmeldefehler ({code}): {msg}",
+      "invalid_uuid": "UUID sieht ungültig aus",
+      "invalid_local_key": "Local Key sieht ungültig aus (mindestens 6 Zeichen)",
+      "invalid_device_id": "Device ID ist erforderlich",
+      "invalid_product_id": "Product ID ist erforderlich",
+      "invalid_category": "Kategorie ist erforderlich"
+    },
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Tuya BLE",
+        "description": "Wie sollen die Gerätedaten (Device ID, UUID, Local Key) beschafft werden?",
+        "menu_options": {
+          "login": "Aus der Tuya-IoT-Cloud abrufen (empfohlen bei Ersteinrichtung)",
+          "manual": "Manuell eingeben (kein Cloud-Zugriff nötig)"
+        }
+      },
+      "login": {
+        "data": {
+          "access_id": "Tuya IoT Access ID",
+          "access_secret": "Tuya IoT Access Secret",
+          "country_code": "Land",
+          "password": "Passwort",
+          "username": "Konto (E-Mail der Smart-Life-/Tuya-App)"
+        },
+        "description": "Tuya BLE braucht den Verschlüsselungsschlüssel des Geräts aus der Tuya-Cloud. Fast alle Geräte benötigen den Cloud-Zugriff nur einmalig bei der Einrichtung.\n\nDie Zugangsdaten stammen aus einem Cloud-Projekt der Tuya IoT Platform (Access ID/Secret) und dem damit verknüpften App-Konto.\n\nTuya-Zugangsdaten eingeben."
+      },
+      "device": {
+        "data": {
+          "address": "Tuya-BLE-Gerät"
+        },
+        "description": "Tuya-BLE-Gerät zur Einrichtung auswählen. Das Gerät muss über die Smart-Life-/Tuya-App in der Cloud registriert sein. Falls es an einem Tuya-Bluetooth-Gateway hängt, dort besser entkoppeln."
+      },
+      "manual": {
+        "title": "Manuelle Zugangsdaten",
+        "description": "Zugangsdaten des Tuya-BLE-Geräts eingeben. Sie stammen z. B. aus einer früheren Einrichtung (`.storage/core.config_entries`, Abschnitt `options` des Eintrags) oder aus der Tuya IoT Platform. Während Home Assistant mit dem Gerät spricht, darf es nicht mit einem Handy oder Tuya-Gateway verbunden sein.",
+        "data": {
+          "address": "Tuya-BLE-Gerät",
+          "uuid": "UUID (z. B. tuya2a3142…)",
+          "local_key": "Local Key",
+          "device_id": "Device ID",
+          "product_id": "Product ID (z. B. neq16kgd)",
+          "category": "Kategorie (z. B. szjqr für Fingerbots)",
+          "device_name": "Gerätename (optional)"
+        }
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "device_not_registered": "Gerät ist nicht in der Tuya-Cloud registriert",
+      "invalid_auth": "Ungültige Anmeldedaten",
+      "login_error": "Anmeldefehler ({code}): {msg}",
+      "invalid_uuid": "UUID sieht ungültig aus",
+      "invalid_local_key": "Local Key sieht ungültig aus (mindestens 6 Zeichen)",
+      "invalid_device_id": "Device ID ist erforderlich",
+      "invalid_product_id": "Product ID ist erforderlich",
+      "invalid_category": "Kategorie ist erforderlich"
+    },
+    "step": {
+      "init": {
+        "title": "Tuya-BLE-Optionen",
+        "menu_options": {
+          "login": "Zugangsdaten aus der Tuya-IoT-Cloud neu abrufen",
+          "manual": "Zugangsdaten manuell bearbeiten",
+          "settings": "Verbindungseinstellungen"
+        }
+      },
+      "login": {
+        "data": {
+          "access_id": "Tuya IoT Access ID",
+          "access_secret": "Tuya IoT Access Secret",
+          "country_code": "Land",
+          "password": "Passwort",
+          "username": "Konto (E-Mail der Smart-Life-/Tuya-App)"
+        },
+        "description": "Zugangsdaten des Tuya-IoT-Cloud-Projekts eingeben. Damit werden UUID, Local Key und Device ID neu aus der Cloud geholt – nötig z. B. nach einem Neu-Koppeln in der App."
+      },
+      "manual": {
+        "title": "Manuelle Zugangsdaten",
+        "description": "Gespeicherte Zugangsdaten bearbeiten. Nach einem Neu-Koppeln in der Smart-Life-App hat das Gerät einen neuen Local Key.",
+        "data": {
+          "uuid": "UUID (z. B. tuya2a3142…)",
+          "local_key": "Local Key",
+          "device_id": "Device ID",
+          "product_id": "Product ID (z. B. neq16kgd)",
+          "category": "Kategorie (z. B. szjqr für Fingerbots)",
+          "device_name": "Gerätename (optional)"
+        }
+      },
+      "settings": {
+        "title": "Verbindungseinstellungen",
+        "description": "Verbindung halten: Die BLE-Verbindung bleibt dauerhaft offen (schnellste Reaktion, belegt einen aktiven Slot am Bluetooth-Adapter/-Proxy, höherer Batterieverbrauch). Aus: Verbindung nur bei Bedarf, Trennung nach der Leerlaufzeit (1–3 s Verzögerung pro Befehl).",
+        "data": {
+          "keep_connection": "BLE-Verbindung dauerhaft halten",
+          "idle_disconnect_delay": "Leerlaufzeit bis zur Trennung (Sekunden)"
+        }
+      }
+    }
+  }
+}

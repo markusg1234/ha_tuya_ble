@@ -20,11 +20,15 @@ from homeassistant.components.climate.const import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+try:
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+except ImportError:  # HA < 2025.2
+    from homeassistant.helpers.entity_platform import (
+        AddEntitiesCallback as AddConfigEntryEntitiesCallback,
+    )
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import DOMAIN
-from .devices import TuyaBLEData, TuyaBLEEntity, TuyaBLEProductInfo
+from .devices import TuyaBLEConfigEntry, TuyaBLEData, TuyaBLEEntity, TuyaBLEProductInfo
 from .tuya_ble import TuyaBLEDataPoint, TuyaBLEDataPointType, TuyaBLEDevice
 
 _LOGGER = logging.getLogger(__name__)
@@ -167,6 +171,14 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
             self._attr_hvac_modes = mapping.hvac_modes
         elif mapping.hvac_switch_dp_id and mapping.hvac_switch_mode:
             self._attr_hvac_modes = [HVACMode.OFF, mapping.hvac_switch_mode]
+
+        if HVACMode.OFF in (self._attr_hvac_modes or []):
+            # HA >= 2024.2 requires explicit TURN_ON/TURN_OFF flags when
+            # HVACMode.OFF is offered; ClimateEntity's default turn_on/off
+            # then map to async_set_hvac_mode.
+            self._attr_supported_features |= (
+                ClimateEntityFeature.TURN_ON | ClimateEntityFeature.TURN_OFF
+            )
 
         if mapping.preset_mode_dp_ids:
             self._attr_supported_features |= ClimateEntityFeature.PRESET_MODE
@@ -343,11 +355,11 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    entry: TuyaBLEConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the Tuya BLE sensors."""
-    data: TuyaBLEData = hass.data[DOMAIN][entry.entry_id]
+    data: TuyaBLEData = entry.runtime_data
     mappings = get_mapping_by_device(data.device)
     entities: list[TuyaBLEClimate] = []
     for mapping in mappings:

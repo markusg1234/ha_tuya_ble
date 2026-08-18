@@ -3,15 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import logging
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS, CONF_DEVICE_ID
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.entity import (
-    DeviceInfo,
-    EntityDescription,
-    generate_entity_id,
-)
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -78,9 +76,6 @@ class TuyaBLEEntity(CoordinatorEntity):
         self._attr_has_entity_name = True
         self._attr_device_info = get_device_info(self._device)
         self._attr_unique_id = f"{self._device.device_id}-{description.key}"
-        self.entity_id = generate_entity_id(
-            "sensor.{}", self._attr_unique_id, hass=hass
-        )
 
     @property
     def available(self) -> bool:
@@ -112,6 +107,10 @@ class TuyaBLECoordinator(DataUpdateCoordinator[None]):
 
     @property
     def connected(self) -> bool:
+        if not self._device.keep_connection:
+            # On-demand mode: available once the device has been reached at
+            # least once; a failing command surfaces as an error instead.
+            return self._device.last_connected_at is not None
         return not self._disconnected
 
     @callback
@@ -165,6 +164,9 @@ class TuyaBLEData:
     product: TuyaBLEProductInfo
     manager: HASSTuyaBLEDeviceManager
     coordinator: TuyaBLECoordinator
+
+
+TuyaBLEConfigEntry = ConfigEntry[TuyaBLEData]
 
 
 @dataclass
